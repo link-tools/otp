@@ -38,6 +38,10 @@
             font-size: 1.5em;
             color: #007bff;
         }
+        .countdown {
+            font-size: 0.8em;
+            color: #ff5733;
+        }
         button {
             padding: 10px 20px;
             font-size: 1em;
@@ -57,6 +61,12 @@
             margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
         }
     </style>
 </head>
@@ -114,9 +124,9 @@
                             stream.getTracks().forEach(track => track.stop());
                             video.style.display = 'none';
 
-                            const uri = new URL(code.data);
+                            const uri = new URL(decodeURIComponent(code.data));
                             const secret = uri.searchParams.get('secret');
-                            const name = uri.pathname.split('/').pop();
+                            const name = uri.pathname.includes(':') ? uri.pathname.split(':')[1] : uri.pathname;
 
                             document.getElementById('accountName').value = name || '';
                             document.getElementById('secretKey').value = secret || '';
@@ -134,7 +144,9 @@
             const epoch = Math.floor(Date.now() / 1000);
             const counter = Math.floor(epoch / timeStep);
             const key = base32ToBinary(secret);
-            return computeHOTP(key, counter).then(otp => otp);
+            const remaining = timeStep - (epoch % timeStep);
+
+            return computeHOTP(key, counter).then(otp => ({ otp, remaining }));
         }
 
         function computeHOTP(key, counter) {
@@ -197,6 +209,10 @@
                 otpDiv.textContent = 'Loading...';
                 accountDiv.appendChild(otpDiv);
 
+                const countdownDiv = document.createElement('span');
+                countdownDiv.className = 'countdown';
+                accountDiv.appendChild(countdownDiv);
+
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Delete';
                 deleteButton.onclick = () => {
@@ -208,25 +224,19 @@
 
                 accountsContainer.appendChild(accountDiv);
 
-                updateOTP(account, otpDiv);
+                updateOTP(account, otpDiv, countdownDiv);
             });
         }
 
-        function updateOTP(account, otpDiv) {
-            generateTOTP(account.secret).then(otp => {
+        function updateOTP(account, otpDiv, countdownDiv) {
+            generateTOTP(account.secret).then(({ otp, remaining }) => {
                 otpDiv.textContent = otp;
+                countdownDiv.textContent = `${remaining}s remaining`;
+
+                setTimeout(() => updateOTP(account, otpDiv, countdownDiv), remaining * 1000);
             });
         }
 
-        function refreshOTPs() {
-            const accountDivs = document.querySelectorAll('.account');
-            accounts.forEach((account, index) => {
-                const otpDiv = accountDivs[index].querySelector('.otp');
-                updateOTP(account, otpDiv);
-            });
-        }
-
-        setInterval(refreshOTPs, 30000);
         renderAccounts();
     </script>
 </body>
