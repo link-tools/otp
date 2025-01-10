@@ -33,6 +33,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .otp {
             font-size: 1.5em;
@@ -233,7 +235,7 @@
                 otpDiv.textContent = otp;
                 countdownDiv.textContent = `${remaining}s remaining`;
 
-                setTimeout(() => updateOTP(account, otpDiv, countdownDiv), remaining * 1000);
+                setTimeout(() => updateOTP(account, otpDiv, countdownDiv), 1000);
             });
         }
 
